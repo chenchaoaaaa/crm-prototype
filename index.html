@@ -188,8 +188,8 @@ function App() {
   };
 
   const SortIcon = ({ col }) => {
-    if (sortCol !== col) return <span style={{ opacity: .3, marginLeft: 4, fontSize: 10 }}>&#8693;</span>;
-    return <span style={{ marginLeft: 4, fontSize: 10, color: "#4f6ef7" }}>{sortDir === "asc" ? "&#8593;" : "&#8595;"}</span>;
+    if (sortCol !== col) return <span style={{ opacity: .3, marginLeft: 4, fontSize: 10 }}>{"\u21C3"}</span>;
+    return <span style={{ marginLeft: 4, fontSize: 10, color: "#4f6ef7" }}>{sortDir === "asc" ? "\u2191" : "\u2193"}</span>;
   };
 
   /* ═══════════════ RENDER ═══════════════ */
@@ -203,10 +203,10 @@ function App() {
         </div>
         <nav style={{ flex: 1, padding: "12px 8px" }}>
           {[
-            { icon: "&#128202;", label: "数据概览", active: true },
-            { icon: "&#128101;", label: "客户管理", active: false },
-            { icon: "&#128203;", label: "跟进记录", active: false },
-            { icon: "&#128200;", label: "数据分析", active: false },
+            { icon: "\uD83D\uDCCA", label: "数据概览", active: true },
+            { icon: "\uD83D\uDC65", label: "客户管理", active: false },
+            { icon: "\uD83D\uDCCB", label: "跟进记录", active: false },
+            { icon: "\uD83D\uDCC8", label: "数据分析", active: false },
           ].map((item, i) => (
             <div key={i} style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 4, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: item.active ? "rgba(79,110,247,.2)" : "transparent", fontSize: 13, color: item.active ? "#fff" : "rgba(255,255,255,.5)", transition: "all .2s" }}>
               <span style={{ fontSize: 16, width: 20, textAlign: "center" }} dangerouslySetInnerHTML={{ __html: item.icon }} />
@@ -216,7 +216,7 @@ function App() {
         </nav>
         <div style={{ padding: "12px 8px", borderTop: "1px solid rgba(255,255,255,.08)" }}>
           <div style={{ padding: "10px 12px", borderRadius: 8, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: "rgba(255,255,255,.5)" }} onClick={() => setShowLogs(!showLogs)}>
-            <span style={{ fontSize: 16 }}>&#128220;</span>
+            <span style={{ fontSize: 16 }}>{"\uD83D\uDCDC"}</span>
             {sidebarOpen && <span>操作日志 {logs.length > 0 && <span style={{ background: "#4f6ef7", color: "#fff", borderRadius: 99, padding: "1px 7px", fontSize: 11, marginLeft: 4 }}>{logs.length}</span>}</span>}
           </div>
         </div>
@@ -238,7 +238,7 @@ function App() {
         <main style={{ flex: 1, padding: 24, overflow: "auto" }}>
           {/* Simulate bar */}
           <div style={{ display: "flex", gap: 8, padding: "10px 16px", background: "#fffbeb", borderRadius: 10, marginBottom: 20, fontSize: 12, color: "#92400e", alignItems: "center", border: "1px solid #fde68a" }}>
-            <span>&#9888;&#65039;</span>
+            <span>{"\u26A0\uFE0F"}</span>
             <span style={{ fontWeight: 600 }}>原型演示模式</span>
             <button style={{ padding: "4px 12px", background: simEmpty ? "#d97706" : "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600, marginLeft: 8 }} onClick={() => { setSimEmpty(!simEmpty); setPage(1); }}>{simEmpty ? "恢复数据" : "空状态"}</button>
             <button style={{ padding: "4px 12px", background: simError ? "#d97706" : "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }} onClick={() => setSimError(!simError)}>{simError ? "关闭错误" : "错误提示"}</button>
@@ -248,7 +248,7 @@ function App() {
           {/* Error banner */}
           {simError && (
             <div style={{ padding: "14px 20px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, marginBottom: 20, display: "flex", alignItems: "center", gap: 12, animation: "shake .4s ease", color: "#dc2626" }}>
-              <span style={{ fontSize: 20 }}>&#10060;</span>
+              <span style={{ fontSize: 20 }}>{"\u274C"}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>网络连接异常</div>
                 <div style={{ fontSize: 12, marginTop: 2, color: "#991b1b" }}>无法连接到数据服务器 (ERR_CONNECTION_TIMEOUT) - 请检查网络设置后重试</div>
@@ -260,10 +260,10 @@ function App() {
           {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
             {[
-              { num: stats.total, label: "客户总数", icon: "&#128101;", color: "#4f6ef7", bg: "#eef2ff", trend: "+3 本月" },
-              { num: stats.active, label: "活跃客户", icon: "&#9989;", color: "#059669", bg: "#ecfdf5", trend: Math.round(stats.active/stats.total*100) + "% 占比" },
-              { num: stats.leads, label: "潜在客户", icon: "&#128161;", color: "#d97706", bg: "#fffbeb", trend: "需跟进" },
-              { num: stats.aLevel, label: "A 级客户", icon: "&#11088;", color: "#dc2626", bg: "#fef2f2", trend: "高价值" },
+              { num: stats.total, label: "客户总数", icon: "\uD83D\uDC65", color: "#4f6ef7", bg: "#eef2ff", trend: "+3 本月" },
+              { num: stats.active, label: "活跃客户", icon: "\u2705", color: "#059669", bg: "#ecfdf5", trend: Math.round(stats.active/stats.total*100) + "% 占比" },
+              { num: stats.leads, label: "潜在客户", icon: "\uD83D\uDCA1", color: "#d97706", bg: "#fffbeb", trend: "需跟进" },
+              { num: stats.aLevel, label: "A 级客户", icon: "\u2B50", color: "#dc2626", bg: "#fef2f2", trend: "高价值" },
             ].map((s, i) => (
               <div key={i} style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 3px rgba(0,0,0,.04)", border: "1px solid #f1f5f9" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -282,7 +282,7 @@ function App() {
           <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,.04)", border: "1px solid #f1f5f9", overflow: "hidden" }}>
             <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div style={{ flex: "1 1 240px", position: "relative" }}>
-                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 14 }}>&#128269;</span>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 14 }}>{"\uD83D\uDD0D"}</span>
                 <input style={{ width: "100%", padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} placeholder="搜索姓名、公司、邮箱或手机号..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
               </div>
               <select style={{ padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#fff", cursor: "pointer", minWidth: 110 }} value={filterIndustry} onChange={e => { setFilterIndustry(e.target.value); setPage(1); }}>
@@ -293,15 +293,15 @@ function App() {
                 {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
               {selected.size > 0 && (
-                <button style={{ padding: "9px 14px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600 }} onClick={handleBulkDelete}>&#128465; 批量删除 ({selected.size})</button>
+                <button style={{ padding: "9px 14px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600 }} onClick={handleBulkDelete}>{"\uD83D\uDDD1"} 批量删除 ({selected.size})</button>
               )}
-              <button style={{ padding: "9px 14px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500 }} onClick={handleExport}>&#128229; 导出 CSV</button>
+              <button style={{ padding: "9px 14px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500 }} onClick={handleExport}>{"\uD83D\uDCE5"} 导出 CSV</button>
               <button style={{ padding: "9px 18px", background: "linear-gradient(135deg,#4f6ef7,#6366f1)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 8px rgba(79,110,247,.3)" }} onClick={() => openModal("add")}><span style={{ fontSize: 16 }}>+</span> 新增客户</button>
             </div>
 
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: "72px 24px", color: "#94a3b8" }}>
-                <div style={{ fontSize: 56, marginBottom: 16, opacity: .6 }}>&#128203;</div>
+                <div style={{ fontSize: 56, marginBottom: 16, opacity: .6 }}>{"\uD83D\uDCCB"}</div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>{search || filterIndustry !== "全部行业" || filterStatus !== "all" ? "未找到匹配结果" : "暂无客户数据"}</div>
                 <div style={{ fontSize: 13, marginBottom: 24 }}>{search || filterIndustry !== "全部行业" || filterStatus !== "all" ? "请尝试调整搜索关键词或筛选条件" : "点击上方「新增客户」开始添加"}</div>
                 {(search || filterIndustry !== "全部行业" || filterStatus !== "all") && (
@@ -363,9 +363,9 @@ function App() {
                           <td style={{ padding: "14px 16px", fontSize: 12, color: "#94a3b8" }}>{c.createdAt}</td>
                           <td style={{ padding: "14px 16px", textAlign: "right" }}>
                             <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-                              <button title="详情" onClick={() => openModal("detail", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#475569" }}>&#128065;</button>
-                              <button title="编辑" onClick={() => openModal("edit", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef2ff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#4f6ef7" }}>&#9998;</button>
-                              <button title="删除" onClick={() => openModal("delete", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#fef2f2", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#dc2626" }}>&#128465;</button>
+                              <button title="详情" onClick={() => openModal("detail", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#475569"}}>{"\uD83D\uDC41"}</button>
+                              <button title="编辑" onClick={() => openModal("edit", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef2ff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#4f6ef7"}}>{"\u270E"}</button>
+                              <button title="删除" onClick={() => openModal("delete", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#fef2f2", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#dc2626"}}>{"\uD83D\uDDD1"}</button>
                             </div>
                           </td>
                         </tr>
@@ -377,11 +377,11 @@ function App() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderTop: "1px solid #f1f5f9", fontSize: 13, color: "#64748b" }}>
                   <span>共 <strong style={{ color: "#1e293b" }}>{filtered.length}</strong> 条记录 - 第 {safePage}/{totalPages} 页</span>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13, opacity: safePage <= 1 ? .4 : 1 }} disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>&#8249;</button>
+                    <button style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13, opacity: safePage <= 1 ? .4 : 1 }} disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>{"\u2039"}</button>
                     {Array.from({ length: totalPages }, (_, i) => (
                       <button key={i + 1} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid", borderRadius: 6, fontSize: 13, cursor: "pointer", fontWeight: safePage === i + 1 ? 700 : 400, background: safePage === i + 1 ? "#4f6ef7" : "#fff", color: safePage === i + 1 ? "#fff" : "#475569", borderColor: safePage === i + 1 ? "#4f6ef7" : "#e2e8f0" }} onClick={() => setPage(i + 1)}>{i + 1}</button>
                     ))}
-                    <button style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13, opacity: safePage >= totalPages ? .4 : 1 }} disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>&#8250;</button>
+                    <button style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13, opacity: safePage >= totalPages ? .4 : 1 }} disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>{"\u203A"}</button>
                   </div>
                 </div>
               </>
@@ -397,7 +397,7 @@ function App() {
           <div style={{ background: "#fff", borderRadius: 16, width: "92%", maxWidth: 560, maxHeight: "90vh", overflow: "auto", boxShadow: "0 25px 60px rgba(0,0,0,.25)", animation: "slideUp .3s ease-out" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 24px 0", fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
               <span>{modal.type === "add" ? "新增客户" : "编辑客户信息"}</span>
-              <button onClick={closeModal} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 16, color: "#64748b" }}>&#10005;</button>
+              <button onClick={closeModal} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 16, color: "#64748b" }}>{"\u2715"}</button>
             </div>
             <div style={{ padding: "20px 24px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -462,7 +462,7 @@ function App() {
           <div style={{ background: "#fff", borderRadius: 16, width: "92%", maxWidth: 620, maxHeight: "90vh", overflow: "auto", boxShadow: "0 25px 60px rgba(0,0,0,.25)", animation: "slideUp .3s ease-out" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 24px 0", fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
               <span>客户详情</span>
-              <button onClick={closeModal} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 16, color: "#64748b" }}>&#10005;</button>
+              <button onClick={closeModal} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 16, color: "#64748b" }}>{"\u2715"}</button>
             </div>
             <div style={{ display: "flex", gap: 0, padding: "16px 24px 0", borderBottom: "1px solid #f1f5f9" }}>
               {[{ key: "info", label: "基本信息" }, { key: "notes", label: "跟进记录" }].map(t => (
@@ -525,7 +525,7 @@ function App() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, animation: "fadeIn .2s", backdropFilter: "blur(4px)" }} onClick={closeModal}>
           <div style={{ background: "#fff", borderRadius: 16, width: "92%", maxWidth: 420, boxShadow: "0 25px 60px rgba(0,0,0,.25)", animation: "slideUp .3s ease-out" }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: "32px 24px 24px", textAlign: "center" }}>
-              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 28, color: "#dc2626" }}>&#9888;</div>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 28, color: "#dc2626" }}>{"\u26A0"}</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>确认删除该客户？</div>
               <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
                 即将删除 <strong style={{ color: "#1e293b" }}>{modal.customer.name}</strong>（{modal.customer.company}）<br />此操作不可撤销，相关数据将永久移除。
@@ -543,7 +543,7 @@ function App() {
         <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: 320, background: "#fff", boxShadow: "-4px 0 20px rgba(0,0,0,.1)", zIndex: 999, animation: "slideInRight .3s ease-out", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>操作日志</span>
-            <button onClick={() => setShowLogs(false)} style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14 }}>&#10005;</button>
+            <button onClick={() => setShowLogs(false)} style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14 }}>{"\u2715"}</button>
           </div>
           <div style={{ flex: 1, overflow: "auto", padding: "12px 16px" }}>
             {logs.map((log, i) => (
@@ -561,7 +561,7 @@ function App() {
 
       {toast && (
         <div style={{ position: "fixed", top: 20, right: 20, padding: "14px 22px", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 600, zIndex: 3000, boxShadow: "0 8px 24px rgba(0,0,0,.15)", animation: "slideInRight .3s ease-out", display: "flex", alignItems: "center", gap: 10, background: toast.type === "success" ? "linear-gradient(135deg,#059669,#10b981)" : "linear-gradient(135deg,#dc2626,#ef4444)" }}>
-          <span style={{ fontSize: 16 }}>{toast.type === "success" ? "&#9989;" : "&#10060;"}</span>
+          <span style={{ fontSize: 16 }}>{toast.type === "success" ? "\u2705" : "\u274C"}</span>
           {toast.msg}
         </div>
       )}
