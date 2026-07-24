@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客户管理后台 CRM</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f6fa; color: #2d3436; font-size: 14px; overflow-x: hidden; }
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(.97) } to { opacity: 1; transform: translateY(0) scale(1) } }
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(60px) } to { opacity: 1; transform: translateX(0) } }
+  @keyframes shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-4px) } 75% { transform: translateX(4px) } }
+  input:focus, select:focus, textarea:focus { border-color: #4f6ef7 !important; box-shadow: 0 0 0 3px rgba(79,110,247,.12); outline: none; }
+  button { font-family: inherit; }
+  ::selection { background: #c7d2fe; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo, useCallback, useRef, useEffect } = React;
+
+/* ══════════════ DATA ═══════════════ */
+const INIT_DATA = [
+  { id: 1, name: "张伟", company: "杭州云智科技有限公司", industry: "互联网/IT", email: "zhangwei@yunzhi.com", phone: "138-0001-1001", status: "active", level: "A", createdAt: "2025-11-12", notes: "对 AI 客服产品有强烈兴趣，Q2 有采购预算。", lastContact: "2026-07-18" },
+  { id: 2, name: "李娜", company: "深圳蓝海贸易集团", industry: "贸易/物流", email: "lina@bluesea.cn", phone: "139-0002-2002", status: "active", level: "B", createdAt: "2025-12-03", notes: "已签约基础版，计划升级企业版。", lastContact: "2026-07-10" },
+  { id: 3, name: "王磊", company: "江西绿谷农业科技", industry: "农业/食品", email: "wanglei@greenvalley.com", phone: "137-0003-3003", status: "inactive", level: "C", createdAt: "2026-01-18", notes: "上次跟进无回复，待二次触达。", lastContact: "2026-05-22" },
+  { id: 4, name: "赵敏", company: "上海星辰教育科技", industry: "教育/培训", email: "zhaomin@staredu.com", phone: "136-0004-4004", status: "active", level: "A", createdAt: "2026-02-22", notes: "已安排产品 Demo，反馈积极。", lastContact: "2026-07-20" },
+  { id: 5, name: "陈浩", company: "北京鼎新金融信息", industry: "金融/保险", email: "chenhao@dingxinfin.com", phone: "135-0005-5005", status: "lead", level: "B", createdAt: "2026-03-10", notes: "通过行业峰会获取的线索，需进一步沟通。", lastContact: "2026-06-15" },
+  { id: 6, name: "刘芳", company: "广州美嘉电商", industry: "互联网/IT", email: "liufang@meijia.com", phone: "134-0006-6006", status: "active", level: "A", createdAt: "2026-04-05", notes: "老客户续费，关系维护良好。", lastContact: "2026-07-22" },
+  { id: 7, name: "孙强", company: "成都味享餐饮管理", industry: "餐饮/零售", email: "sunqiang@weixiang.cn", phone: "133-0007-7007", status: "lead", level: "C", createdAt: "2026-05-14", notes: "初步接触，了解基本需求中。", lastContact: "2026-06-28" },
+  { id: 8, name: "周婷", company: "南京瑞康医疗器械", industry: "医疗/健康", email: "zhouting@ruikang.com", phone: "132-0008-8008", status: "inactive", level: "B", createdAt: "2026-06-01", notes: "预算审批中，预计 Q3 有结果。", lastContact: "2026-06-05" },
+];
+
+const INDUSTRIES = ["全部行业", "互联网/IT", "贸易/物流", "农业/食品", "教育/培训", "金融/保险", "餐饮/零售", "医疗/健康"];
+const STATUS_MAP = { active: { label: "活跃", color: "#059669", bg: "#ecfdf5", dot: "#10b981" }, lead: { label: "潜在", color: "#2563eb", bg: "#eff6ff", dot: "#3b82f6" }, inactive: { label: "非活跃", color: "#6b7280", bg: "#f3f4f6", dot: "#9ca3af" } };
+const LEVEL_MAP = { A: { color: "#ef4444", bg: "#fef2f2", label: "A" }, B: { color: "#d97706", bg: "#fffbeb", label: "B" }, C: { color: "#6b7280", bg: "#f3f4f6", label: "C" } };
+const PER_PAGE = 6;
+
+/* ═════════════ HELPERS ═══════════════ */
+const avatarColors = ["#4f6ef7","#7c3aed","#db2777","#ea580c","#0891b2","#059669","#4338ca","#be185d"];
+function getAvatarColor(name) { return avatarColors[(name.charCodeAt(0) + name.charCodeAt(1)) % avatarColors.length]; }
+function getInitials(name) { return name.slice(0, 1); }
+function formatDate(d) { if (!d) return "-"; const dt = new Date(d); return dt.getFullYear() + "-" + String(dt.getMonth()+1).padStart(2,"0") + "-" + String(dt.getDate()).padStart(2,"0"); }
+
+/* ═══════════════ COMPONENT ═══════════════ */
+function App() {
+  const [customers, setCustomers] = useState(INIT_DATA);
+  const [search, setSearch] = useState("");
+  const [filterIndustry, setFilterIndustry] = useState("全部行业");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [page, setPage] = useState(1);
+  const [sortCol, setSortCol] = useState("createdAt");
+  const [sortDir, setSortDir] = useState("desc");
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+  const [formErrors, setFormErrors] = useState({});
+  const [toast, setToast] = useState(null);
+  const [simEmpty, setSimEmpty] = useState(false);
+  const [simError, setSimError] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const [detailTab, setDetailTab] = useState("info");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [logs, setLogs] = useState([{ time: "2026-07-24 09:00", action: "系统初始化", detail: "加载 8 条客户数据" }]);
+  const [showLogs, setShowLogs] = useState(false);
+
+  const addLog = useCallback((action, detail) => {
+    setLogs(prev => [{ time: new Date().toLocaleString("zh-CN", { hour12: false }).replace(/\//g, "-"), action, detail }, ...prev]);
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (simEmpty) return [];
+    let list = [...customers];
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(c => c.name.includes(q) || c.company.includes(q) || c.email.toLowerCase().includes(q) || c.phone.includes(q));
+    }
+    if (filterIndustry !== "全部行业") list = list.filter(c => c.industry === filterIndustry);
+    if (filterStatus !== "all") list = list.filter(c => c.status === filterStatus);
+    list.sort((a, b) => {
+      const va = a[sortCol] || "", vb = b[sortCol] || "";
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [customers, search, filterIndustry, filterStatus, simEmpty, sortCol, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+
+  const stats = useMemo(() => ({
+    total: customers.length,
+    active: customers.filter(c => c.status === "active").length,
+    leads: customers.filter(c => c.status === "lead").length,
+    aLevel: customers.filter(c => c.level === "A").length,
+  }), [customers]);
+
+  const allSelected = paged.length > 0 && paged.every(c => selected.has(c.id));
+
+  const showToast = useCallback((msg, type) => {
+    setToast({ msg, type: type || "success" });
+    setTimeout(() => setToast(null), 2800);
+  }, []);
+
+  const openModal = (type, customer) => {
+    setModal({ type, customer });
+    if (type === "add") { setForm({ name: "", company: "", industry: "互联网/IT", email: "", phone: "", status: "lead", level: "C", notes: "" }); setFormErrors({}); }
+    else if (type === "edit" && customer) { setForm({ ...customer }); setFormErrors({}); }
+    if (type === "detail") setDetailTab("info");
+  };
+  const closeModal = () => { setModal(null); setFormErrors({}); };
+
+  const validate = () => {
+    const e = {};
+    if (!form.name || !form.name.trim()) e.name = "请输入客户姓名";
+    if (!form.company || !form.company.trim()) e.company = "请输入公司名称";
+    if (!form.email || !form.email.trim()) e.email = "请输入邮箱";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "邮箱格式不正确";
+    if (!form.phone || !form.phone.trim()) e.phone = "请输入手机号";
+    setFormErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+    if (modal.type === "add") {
+      const newId = Math.max(0, ...customers.map(c => c.id)) + 1;
+      const newC = { ...form, id: newId, createdAt: formatDate(new Date()), lastContact: formatDate(new Date()) };
+      setCustomers(prev => [newC, ...prev]);
+      addLog("新增客户", form.name + " - " + form.company);
+      showToast("客户添加成功");
+    } else {
+      setCustomers(prev => prev.map(c => c.id === form.id ? { ...form, lastContact: formatDate(new Date()) } : c));
+      addLog("编辑客户", form.name + " - " + form.company);
+      showToast("客户信息已更新");
+    }
+    closeModal();
+  };
+
+  const handleDelete = (c) => {
+    setCustomers(prev => prev.filter(x => x.id !== c.id));
+    setSelected(prev => { const n = new Set(prev); n.delete(c.id); return n; });
+    addLog("删除客户", c.name + " - " + c.company);
+    showToast("客户已删除");
+    closeModal();
+  };
+
+  const handleBulkDelete = () => {
+    const count = selected.size;
+    setCustomers(prev => prev.filter(c => !selected.has(c.id)));
+    addLog("批量删除", "删除 " + count + " 位客户");
+    setSelected(new Set());
+    showToast("已删除 " + count + " 位客户");
+  };
+
+  const handleExport = () => {
+    const header = "\u59d3\u540d,\u516c\u53f8,\u884c\u4e1a,\u90ae\u7bb1,\u624b\u673a\u53f7,\u7b49\u7ea7,\u72b6\u6001,\u521b\u5efa\u65e5\u671f\n";
+    const rows = filtered.map(c => c.name + "," + c.company + "," + c.industry + "," + c.email + "," + c.phone + "," + c.level + "," + STATUS_MAP[c.status].label + "," + c.createdAt).join("\n");
+    const blob = new Blob(["\ufeff" + header + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "customer_" + formatDate(new Date()) + ".csv"; a.click();
+    URL.revokeObjectURL(url);
+    addLog("导出数据", "导出 " + filtered.length + " 条记录");
+    showToast("CSV 导出成功");
+  };
+
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("desc"); }
+    setPage(1);
+  };
+
+  const toggleSelect = (id) => {
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+  const toggleSelectAll = () => {
+    if (allSelected) setSelected(prev => { const n = new Set(prev); paged.forEach(c => n.delete(c.id)); return n; });
+    else setSelected(prev => { const n = new Set(prev); paged.forEach(c => n.add(c.id)); return n; });
+  };
+
+  const SortIcon = ({ col }) => {
+    if (sortCol !== col) return <span style={{ opacity: .3, marginLeft: 4, fontSize: 10 }}>&#8693;</span>;
+    return <span style={{ marginLeft: 4, fontSize: 10, color: "#4f6ef7" }}>{sortDir === "asc" ? "&#8593;" : "&#8595;"}</span>;
+  };
+
+  /* ═══════════════ RENDER ═══════════════ */
+  return (
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      {/* ─── Sidebar ─── */}
+      <aside style={{ width: sidebarOpen ? 220 : 60, background: "linear-gradient(180deg,#1e293b 0%,#0f172a 100%)", color: "#fff", transition: "width .3s ease", flexShrink: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: sidebarOpen ? "20px 16px" : "20px 12px", borderBottom: "1px solid rgba(255,255,255,.08)", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setSidebarOpen(!sidebarOpen)}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#4f6ef7,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>C</div>
+          {sidebarOpen && <div><div style={{ fontSize: 15, fontWeight: 700, letterSpacing: .5 }}>CRM</div><div style={{ fontSize: 10, opacity: .5, marginTop: 1 }}>客户管理系统</div></div>}
+        </div>
+        <nav style={{ flex: 1, padding: "12px 8px" }}>
+          {[
+            { icon: "&#128202;", label: "数据概览", active: true },
+            { icon: "&#128101;", label: "客户管理", active: false },
+            { icon: "&#128203;", label: "跟进记录", active: false },
+            { icon: "&#128200;", label: "数据分析", active: false },
+          ].map((item, i) => (
+            <div key={i} style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 4, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: item.active ? "rgba(79,110,247,.2)" : "transparent", fontSize: 13, color: item.active ? "#fff" : "rgba(255,255,255,.5)", transition: "all .2s" }}>
+              <span style={{ fontSize: 16, width: 20, textAlign: "center" }} dangerouslySetInnerHTML={{ __html: item.icon }} />
+              {sidebarOpen && <span>{item.label}</span>}
+            </div>
+          ))}
+        </nav>
+        <div style={{ padding: "12px 8px", borderTop: "1px solid rgba(255,255,255,.08)" }}>
+          <div style={{ padding: "10px 12px", borderRadius: 8, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: "rgba(255,255,255,.5)" }} onClick={() => setShowLogs(!showLogs)}>
+            <span style={{ fontSize: 16 }}>&#128220;</span>
+            {sidebarOpen && <span>操作日志 {logs.length > 0 && <span style={{ background: "#4f6ef7", color: "#fff", borderRadius: 99, padding: "1px 7px", fontSize: 11, marginLeft: 4 }}>{logs.length}</span>}</span>}
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main ─── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <header style={{ height: 56, background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 16, fontWeight: 700, color: "#1e293b" }}>客户管理</h1>
+            <span style={{ fontSize: 11, color: "#9ca3af", background: "#f3f4f6", padding: "2px 8px", borderRadius: 4 }}>v1.0</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontSize: 12, color: "#9ca3af" }}>{new Date().toLocaleDateString("zh-CN")}</span>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#4f6ef7,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13, fontWeight: 600 }}>陈</div>
+          </div>
+        </header>
+
+        <main style={{ flex: 1, padding: 24, overflow: "auto" }}>
+          {/* Simulate bar */}
+          <div style={{ display: "flex", gap: 8, padding: "10px 16px", background: "#fffbeb", borderRadius: 10, marginBottom: 20, fontSize: 12, color: "#92400e", alignItems: "center", border: "1px solid #fde68a" }}>
+            <span>&#9888;&#65039;</span>
+            <span style={{ fontWeight: 600 }}>原型演示模式</span>
+            <button style={{ padding: "4px 12px", background: simEmpty ? "#d97706" : "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600, marginLeft: 8 }} onClick={() => { setSimEmpty(!simEmpty); setPage(1); }}>{simEmpty ? "恢复数据" : "空状态"}</button>
+            <button style={{ padding: "4px 12px", background: simError ? "#d97706" : "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }} onClick={() => setSimError(!simError)}>{simError ? "关闭错误" : "错误提示"}</button>
+            <span style={{ marginLeft: "auto", opacity: .6 }}>点击按钮预览特殊状态</span>
+          </div>
+
+          {/* Error banner */}
+          {simError && (
+            <div style={{ padding: "14px 20px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, marginBottom: 20, display: "flex", alignItems: "center", gap: 12, animation: "shake .4s ease", color: "#dc2626" }}>
+              <span style={{ fontSize: 20 }}>&#10060;</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>网络连接异常</div>
+                <div style={{ fontSize: 12, marginTop: 2, color: "#991b1b" }}>无法连接到数据服务器 (ERR_CONNECTION_TIMEOUT) - 请检查网络设置后重试</div>
+              </div>
+              <button onClick={() => setSimError(false)} style={{ padding: "6px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>重试</button>
+            </div>
+          )}
+
+          {/* Stats */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+            {[
+              { num: stats.total, label: "客户总数", icon: "&#128101;", color: "#4f6ef7", bg: "#eef2ff", trend: "+3 本月" },
+              { num: stats.active, label: "活跃客户", icon: "&#9989;", color: "#059669", bg: "#ecfdf5", trend: Math.round(stats.active/stats.total*100) + "% 占比" },
+              { num: stats.leads, label: "潜在客户", icon: "&#128161;", color: "#d97706", bg: "#fffbeb", trend: "需跟进" },
+              { num: stats.aLevel, label: "A 级客户", icon: "&#11088;", color: "#dc2626", bg: "#fef2f2", trend: "高价值" },
+            ].map((s, i) => (
+              <div key={i} style={{ background: "#fff", borderRadius: 12, padding: "20px 22px", boxShadow: "0 1px 3px rgba(0,0,0,.04)", border: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.num}</div>
+                    <div style={{ fontSize: 13, color: "#64748b", marginTop: 6 }}>{s.label}</div>
+                  </div>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{s.icon}</div>
+                </div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 10, paddingTop: 8, borderTop: "1px solid #f1f5f9" }}>{s.trend}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Table card */}
+          <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,.04)", border: "1px solid #f1f5f9", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 240px", position: "relative" }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 14 }}>&#128269;</span>
+                <input style={{ width: "100%", padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} placeholder="搜索姓名、公司、邮箱或手机号..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+              </div>
+              <select style={{ padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#fff", cursor: "pointer", minWidth: 110 }} value={filterIndustry} onChange={e => { setFilterIndustry(e.target.value); setPage(1); }}>
+                {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+              </select>
+              <select style={{ padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#fff", cursor: "pointer", minWidth: 110 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
+                <option value="all">全部状态</option>
+                {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+              {selected.size > 0 && (
+                <button style={{ padding: "9px 14px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600 }} onClick={handleBulkDelete}>&#128465; 批量删除 ({selected.size})</button>
+              )}
+              <button style={{ padding: "9px 14px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500 }} onClick={handleExport}>&#128229; 导出 CSV</button>
+              <button style={{ padding: "9px 18px", background: "linear-gradient(135deg,#4f6ef7,#6366f1)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 8px rgba(79,110,247,.3)" }} onClick={() => openModal("add")}><span style={{ fontSize: 16 }}>+</span> 新增客户</button>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "72px 24px", color: "#94a3b8" }}>
+                <div style={{ fontSize: 56, marginBottom: 16, opacity: .6 }}>&#128203;</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>{search || filterIndustry !== "全部行业" || filterStatus !== "all" ? "未找到匹配结果" : "暂无客户数据"}</div>
+                <div style={{ fontSize: 13, marginBottom: 24 }}>{search || filterIndustry !== "全部行业" || filterStatus !== "all" ? "请尝试调整搜索关键词或筛选条件" : "点击上方「新增客户」开始添加"}</div>
+                {(search || filterIndustry !== "全部行业" || filterStatus !== "all") && (
+                  <button style={{ padding: "8px 20px", background: "#fff", color: "#4f6ef7", border: "1px solid #4f6ef7", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600 }} onClick={() => { setSearch(""); setFilterIndustry("全部行业"); setFilterStatus("all"); }}>清除所有筛选</button>
+                )}
+              </div>
+            ) : (
+              <>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc" }}>
+                      <th style={{ padding: "12px 16px", textAlign: "center", width: 40 }}>
+                        <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} style={{ cursor: "pointer", accentColor: "#4f6ef7", width: 15, height: 15 }} />
+                      </th>
+                      {[
+                        { key: "name", label: "客户" },
+                        { key: "company", label: "公司" },
+                        { key: "industry", label: "行业" },
+                        { key: "level", label: "等级" },
+                        { key: "status", label: "状态" },
+                        { key: "createdAt", label: "创建日期" },
+                      ].map(col => (
+                        <th key={col.key} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }} onClick={() => toggleSort(col.key)}>
+                          {col.label}<SortIcon col={col.key} />
+                        </th>
+                      ))}
+                      <th style={{ padding: "12px 16px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#64748b" }}>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paged.map(c => {
+                      const sb = STATUS_MAP[c.status];
+                      const lv = LEVEL_MAP[c.level];
+                      const ac = getAvatarColor(c.name);
+                      return (
+                        <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background .15s", background: selected.has(c.id) ? "#faf5ff" : "transparent" }}>
+                          <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                            <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} style={{ cursor: "pointer", accentColor: "#4f6ef7", width: 15, height: 15 }} />
+                          </td>
+                          <td style={{ padding: "14px 16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg," + ac + "," + ac + "cc)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>{getInitials(c.name)}</div>
+                              <div>
+                                <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 13 }}>{c.name}</div>
+                                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 1 }}>{c.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: "14px 16px", fontSize: 13, color: "#475569" }}>{c.company}</td>
+                          <td style={{ padding: "14px 16px", fontSize: 12, color: "#64748b" }}>{c.industry}</td>
+                          <td style={{ padding: "14px 16px" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 7, fontSize: 11, fontWeight: 800, color: lv.color, background: lv.bg }}>{lv.label}</span>
+                          </td>
+                          <td style={{ padding: "14px 16px" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 99, fontSize: 12, fontWeight: 500, color: sb.color, background: sb.bg }}>
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: sb.dot }} />{sb.label}
+                            </span>
+                          </td>
+                          <td style={{ padding: "14px 16px", fontSize: 12, color: "#94a3b8" }}>{c.createdAt}</td>
+                          <td style={{ padding: "14px 16px", textAlign: "right" }}>
+                            <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+                              <button title="详情" onClick={() => openModal("detail", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#475569" }}>&#128065;</button>
+                              <button title="编辑" onClick={() => openModal("edit", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef2ff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#4f6ef7" }}>&#9998;</button>
+                              <button title="删除" onClick={() => openModal("delete", c)} style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "#fef2f2", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, color: "#dc2626" }}>&#128465;</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderTop: "1px solid #f1f5f9", fontSize: 13, color: "#64748b" }}>
+                  <span>共 <strong style={{ color: "#1e293b" }}>{filtered.length}</strong> 条记录 - 第 {safePage}/{totalPages} 页</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13, opacity: safePage <= 1 ? .4 : 1 }} disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>&#8249;</button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button key={i + 1} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid", borderRadius: 6, fontSize: 13, cursor: "pointer", fontWeight: safePage === i + 1 ? 700 : 400, background: safePage === i + 1 ? "#4f6ef7" : "#fff", color: safePage === i + 1 ? "#fff" : "#475569", borderColor: safePage === i + 1 ? "#4f6ef7" : "#e2e8f0" }} onClick={() => setPage(i + 1)}>{i + 1}</button>
+                    ))}
+                    <button style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13, opacity: safePage >= totalPages ? .4 : 1 }} disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>&#8250;</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* ═══════════════ MODALS ═══════════════ */}
+
+      {modal && (modal.type === "add" || modal.type === "edit") && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, animation: "fadeIn .2s", backdropFilter: "blur(4px)" }} onClick={closeModal}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "92%", maxWidth: 560, maxHeight: "90vh", overflow: "auto", boxShadow: "0 25px 60px rgba(0,0,0,.25)", animation: "slideUp .3s ease-out" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 24px 0", fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
+              <span>{modal.type === "add" ? "新增客户" : "编辑客户信息"}</span>
+              <button onClick={closeModal} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 16, color: "#64748b" }}>&#10005;</button>
+            </div>
+            <div style={{ padding: "20px 24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>客户姓名 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <input style={{ width: "100%", padding: "9px 12px", border: "1px solid " + (formErrors.name ? "#ef4444" : "#e2e8f0"), borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} value={form.name || ""} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="请输入姓名" />
+                  {formErrors.name && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{formErrors.name}</div>}
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>公司名称 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <input style={{ width: "100%", padding: "9px 12px", border: "1px solid " + (formErrors.company ? "#ef4444" : "#e2e8f0"), borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} value={form.company || ""} onChange={e => setForm({ ...form, company: e.target.value })} placeholder="请输入公司全称" />
+                  {formErrors.company && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{formErrors.company}</div>}
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>邮箱 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <input style={{ width: "100%", padding: "9px 12px", border: "1px solid " + (formErrors.email ? "#ef4444" : "#e2e8f0"), borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} value={form.email || ""} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="example@company.com" />
+                  {formErrors.email && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{formErrors.email}</div>}
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>手机号 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <input style={{ width: "100%", padding: "9px 12px", border: "1px solid " + (formErrors.phone ? "#ef4444" : "#e2e8f0"), borderRadius: 8, fontSize: 13, boxSizing: "border-box" }} value={form.phone || ""} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="138-0000-0000" />
+                  {formErrors.phone && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{formErrors.phone}</div>}
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginTop: 14 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>行业</label>
+                  <select style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", cursor: "pointer", background: "#fff" }} value={form.industry || "互联网/IT"} onChange={e => setForm({ ...form, industry: e.target.value })}>
+                    {INDUSTRIES.filter(i => i !== "全部行业").map(i => <option key={i}>{i}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>状态</label>
+                  <select style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", cursor: "pointer", background: "#fff" }} value={form.status || "lead"} onChange={e => setForm({ ...form, status: e.target.value })}>
+                    {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>等级</label>
+                  <select style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", cursor: "pointer", background: "#fff" }} value={form.level || "C"} onChange={e => setForm({ ...form, level: e.target.value })}>
+                    {Object.entries(LEVEL_MAP).map(([k, v]) => <option key={k} value={k}>{v.label} 级</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>备注</label>
+                <textarea style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", resize: "vertical", minHeight: 72, fontFamily: "inherit" }} value={form.notes || ""} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="添加跟进记录或备注信息..." />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "0 24px 22px" }}>
+              <button onClick={closeModal} style={{ padding: "10px 22px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500 }}>取消</button>
+              <button onClick={handleSave} style={{ padding: "10px 22px", background: "linear-gradient(135deg,#4f6ef7,#6366f1)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600, boxShadow: "0 2px 8px rgba(79,110,247,.3)" }}>{modal.type === "add" ? "确认添加" : "保存修改"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal && modal.type === "detail" && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, animation: "fadeIn .2s", backdropFilter: "blur(4px)" }} onClick={closeModal}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "92%", maxWidth: 620, maxHeight: "90vh", overflow: "auto", boxShadow: "0 25px 60px rgba(0,0,0,.25)", animation: "slideUp .3s ease-out" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 24px 0", fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
+              <span>客户详情</span>
+              <button onClick={closeModal} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 16, color: "#64748b" }}>&#10005;</button>
+            </div>
+            <div style={{ display: "flex", gap: 0, padding: "16px 24px 0", borderBottom: "1px solid #f1f5f9" }}>
+              {[{ key: "info", label: "基本信息" }, { key: "notes", label: "跟进记录" }].map(t => (
+                <button key={t.key} onClick={() => setDetailTab(t.key)} style={{ padding: "10px 20px", fontSize: 13, fontWeight: detailTab === t.key ? 700 : 400, background: "none", border: "none", borderBottom: detailTab === t.key ? "2px solid #4f6ef7" : "2px solid transparent", color: detailTab === t.key ? "#4f6ef7" : "#94a3b8", cursor: "pointer", transition: "all .2s" }}>{t.label}</button>
+              ))}
+            </div>
+            <div style={{ padding: "20px 24px" }}>
+              {detailTab === "info" ? (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 20, background: "linear-gradient(135deg,#f8fafc,#f1f5f9)", borderRadius: 12, marginBottom: 20 }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 14, background: "linear-gradient(135deg," + getAvatarColor(modal.customer.name) + "," + getAvatarColor(modal.customer.name) + "aa)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 24, fontWeight: 700, flexShrink: 0 }}>{getInitials(modal.customer.name)}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "#1e293b" }}>{modal.customer.name}</div>
+                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>{modal.customer.company}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 99, fontSize: 12, fontWeight: 600, color: STATUS_MAP[modal.customer.status].color, background: STATUS_MAP[modal.customer.status].bg }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: STATUS_MAP[modal.customer.status].dot }} />{STATUS_MAP[modal.customer.status].label}
+                      </span>
+                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 8, fontSize: 12, fontWeight: 800, color: LEVEL_MAP[modal.customer.level].color, background: LEVEL_MAP[modal.customer.level].bg }}>{LEVEL_MAP[modal.customer.level].label}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px" }}>
+                    {[
+                      { label: "邮箱", value: modal.customer.email },
+                      { label: "手机号", value: modal.customer.phone },
+                      { label: "所属行业", value: modal.customer.industry },
+                      { label: "创建日期", value: modal.customer.createdAt },
+                      { label: "最近联系", value: modal.customer.lastContact || "-" },
+                      { label: "客户 ID", value: "#" + String(modal.customer.id).padStart(4, "0") },
+                    ].map((item, i) => (
+                      <div key={i}>
+                        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4, fontWeight: 500 }}>{item.label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "#1e293b" }}>{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ padding: 16, background: "#f8fafc", borderRadius: 10, borderLeft: "3px solid #4f6ef7" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>{modal.customer.lastContact || modal.customer.createdAt} - 系统记录</span>
+                      <span style={{ fontSize: 11, color: "#4f6ef7", background: "#eef2ff", padding: "2px 8px", borderRadius: 4 }}>跟进</span>
+                    </div>
+                    <div style={{ fontSize: 13, lineHeight: 1.7, color: "#334155" }}>{modal.customer.notes || "暂无跟进记录"}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "0 24px 22px" }}>
+              <button onClick={closeModal} style={{ padding: "10px 22px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500 }}>关闭</button>
+              <button onClick={() => { closeModal(); setTimeout(() => openModal("edit", modal.customer), 200); }} style={{ padding: "10px 22px", background: "linear-gradient(135deg,#4f6ef7,#6366f1)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600, boxShadow: "0 2px 8px rgba(79,110,247,.3)" }}>编辑客户</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal && modal.type === "delete" && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, animation: "fadeIn .2s", backdropFilter: "blur(4px)" }} onClick={closeModal}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "92%", maxWidth: 420, boxShadow: "0 25px 60px rgba(0,0,0,.25)", animation: "slideUp .3s ease-out" }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "32px 24px 24px", textAlign: "center" }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 28, color: "#dc2626" }}>&#9888;</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>确认删除该客户？</div>
+              <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+                即将删除 <strong style={{ color: "#1e293b" }}>{modal.customer.name}</strong>（{modal.customer.company}）<br />此操作不可撤销，相关数据将永久移除。
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12, padding: "0 24px 28px" }}>
+              <button onClick={closeModal} style={{ padding: "10px 28px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500, minWidth: 80 }}>取消</button>
+              <button onClick={() => handleDelete(modal.customer)} style={{ padding: "10px 28px", background: "linear-gradient(135deg,#dc2626,#ef4444)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 600, minWidth: 80, boxShadow: "0 2px 8px rgba(220,38,38,.3)" }}>确认删除</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLogs && (
+        <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: 320, background: "#fff", boxShadow: "-4px 0 20px rgba(0,0,0,.1)", zIndex: 999, animation: "slideInRight .3s ease-out", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>操作日志</span>
+            <button onClick={() => setShowLogs(false)} style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14 }}>&#10005;</button>
+          </div>
+          <div style={{ flex: 1, overflow: "auto", padding: "12px 16px" }}>
+            {logs.map((log, i) => (
+              <div key={i} style={{ padding: "12px 0", borderBottom: i < logs.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#4f6ef7", background: "#eef2ff", padding: "2px 8px", borderRadius: 4 }}>{log.action}</span>
+                  <span style={{ fontSize: 11, color: "#94a3b8" }}>{log.time}</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>{log.detail}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", top: 20, right: 20, padding: "14px 22px", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 600, zIndex: 3000, boxShadow: "0 8px 24px rgba(0,0,0,.15)", animation: "slideInRight .3s ease-out", display: "flex", alignItems: "center", gap: 10, background: toast.type === "success" ? "linear-gradient(135deg,#059669,#10b981)" : "linear-gradient(135deg,#dc2626,#ef4444)" }}>
+          <span style={{ fontSize: 16 }}>{toast.type === "success" ? "&#9989;" : "&#10060;"}</span>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
